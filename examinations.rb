@@ -1,9 +1,9 @@
 class Examination
-  attr_reader :symptom, :disease_name, :medical_cost
+  attr_reader :symptom, :disease, :cost
 
   def initialize(**params)
     @symptom = params[:symptom]
-    @disease_name = params[:disease_name]
-    @medical_cost = params[:medical_cost]
+    @disease = params[:disease]
+    @cost = params[:cost]
   end
 end
