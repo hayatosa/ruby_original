@@ -1,3 +1,5 @@
+require './comments'
+
   #難病助成制度
   def nanbyou_system
 
@@ -16,7 +18,7 @@
     puts "#{@income}万円"
 
     # 難病助成制度の計算
-    @rare_diseases_support = @selected_examination[:cost] - self_pay_limit -  @health_insurance_pay
+    @nanbyou_support = @selected_examination[:cost] - nanbyou_self_pay_limit -  @health_insurance_pay
 
     puts nanbyou_calculation_comment
 
@@ -36,13 +38,13 @@
       break
     end
 
-      @high_medical_costs_system = @self_pay - maximum_self_pay
+      @high_medical_costs_system = @self_pay - kougaku_self_pay_limit
 
       if @high_medical_costs_system < 0
         puts "今回の自己負担額は上限内でしたので、あなたが負担する金額は変わらず#{@self_pay.to_s(:delimited)}円です"
       else
         puts <<~TEXT
-        年収#{@income}万円の場合、自己負担上限額は#{maximum_self_pay.to_s(:delimited)}円です
+        年収#{@income}万円の場合、自己負担上限額は#{kougaku_self_pay_limit.to_s(:delimited)}円です
         残りの#{@high_medical_costs_system.to_s(:delimited)}円も、あなたが加入している医療保険が支払います
         TEXT
       end
@@ -75,7 +77,7 @@
     @young_cost = @balance * 0.4
     @old_cost = @balance * 0.1
 
-    @balances = @selected_examination[:cost] - old_maximum_self_pay
+    @balances = @selected_examination[:cost] - old_self_pay_limit
     @public_costs = @balances / 2
     @young_costs = @balances * 0.4
     @old_costs = @balances * 0.1
@@ -84,17 +86,17 @@
       puts <<~TEXT
       ----------------
       自己負担額は#{@old_self_pay.to_s(:delimited)}円です
-      ただし、上限が定められており、年収#{@income}万円の場合、#{old_maximum_self_pay.to_s(:delimited)}円です
+      ただし、上限が定められており、年収#{@income}万円の場合、#{old_self_pay_limit.to_s(:delimited)}円です
       残りの#{@balances.to_s(:delimited)}円の負担内訳です
       5割（#{@public_costs.to_s(:delimited)}円）が公費（国、都道府県、市町村）
-      4割（#{@young_costs.to_s(:delimited}円）が若年者（75歳未満）の保険料
+      4割（#{@young_costs.to_s(:delimited)}円）が若年者（75歳未満）の保険料
       1割（#{@old_costs.to_s(:delimited)}円）が高齢者（75歳以上）の保険料
       TEXT
     else
 
       puts <<~TEXT
       ----------------
-      自己負担額は#{@old_self_pay.to_s(:delimited}円です
+      自己負担額は#{@old_self_pay.to_s(:delimited)}円です
       残りの#{@balance.to_s(:delimited)}円の負担内訳です
       5割（#{@public_cost.to_s(:delimited)}円）が公費（国、都道府県、市町村）
       4割（#{@young_cost.to_s(:delimited)}円）が若年者（75歳未満）の保険料
