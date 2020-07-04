@@ -1,8 +1,7 @@
 require 'active_support/core_ext/numeric/conversions'
 require './comments'
-require './calculation'
+require './self_pay'
 require './system'
-
 
 include Comments
 
@@ -29,49 +28,51 @@ while true
     puts "不正な入力値です。1~5から選んでください"
     next
   end
-
   break
 end
 
 examination_number = selected_number -1
 @selected_examination = examinations[examination_number]
 
-  while true
-    print "あなたの年齢を教えてください："
-    @age = gets.chomp.to_i
+while true
+  print "あなたの年齢を教えてください："
+  @age = gets.chomp.to_i
 
-    if @age < 0 || 120 < @age
-      puts "不正な値です。0~120を入力してください"
-      next
-    end
-
-    break
+  if @age < 0 || 120 < @age
+    puts "不正な値です。0~120を入力してください"
+    next
   end
+  break
+end
 
 diagnosis_comment
 
-# 自己負担額の計算
+# 自己負担額
 @self_pay = @selected_examination[:cost] * self_pay_ratio/10
-# 残額の計算
+# 医療保険負担額
 @health_insurance_pay = @selected_examination[:cost] - @self_pay
 
-# 4(難病)を選んだ場合
+# 下痢・血便を選んだ場合、難病助成制度に該当
 if examination_number == 3
 
   nanbyou_system
 
-# 難病以外
 elsif  0 <= @age && @age <= 74 && examination_number != 3
 
-  calculation_comment
+  self_pay_comment
 
-  # 高額療養費制度の計算
+  # 高額療養費制度に該当
   if @self_pay > 60_000
+
     kougaku_system
+
   end
-  # 75歳以上の場合制度が異なる、かつ年収に応じて自己負担額が変わる
+
+# 75歳以上の場合制度が異なる、かつ年収に応じて自己負担額が変わる
 elsif 75 <= @age && @age <= 120 && examination_number != 3
-    kouki_koureisha_system
+
+    koureisha_system
+
 end
 
 last_comment
