@@ -1,22 +1,22 @@
 # Who pays medical
 あなたが患者役となり、ある病気にかかったときの医療費や自己支払い以外の費用負担先が分かるRubyプログラムです。
 
-# 手順
+## 手順
 1.症状を5つの選択肢から選んでください
 2.あなたの年齢を入力してください
 3.選んだ症状や入力した年齢（75歳以上）によりますが、年収の入力を求められる場合もあります
 
-# 使い方
+## 使い方
 1.ターミナルで実行。アプリのディレクトリ上で ruby main.rb　を実行
 2.画面のメッセージ（医師からの問いかけ）に従い、数値を入力してください
 
-# インストール
+## インストール
 
-```bash
-git clone https://github.com/hayatosa/ruby_original.git
-cd ruby_original
-ruby main.rb
+```
+$ git clone https://github.com/hayatosa/ruby_original.git
+$ cd ruby_original
+$ ruby main.rb
 ```
 
-# 開発環境
+## 開発環境
 Ruby 2.6.5
