@@ -8,26 +8,26 @@ module Comments
     TEXT
   end
 
-  def diagnosis_comment
+  def diagnosis_comment(age: ,symptom: ,disease: ,cost:)
     puts <<~TEXT
     ----------------
-    年齢は#{@age}歳、症状は「#{@selected_examination.symptom}」ですね
+    年齢は#{age}歳、症状は「#{symptom}」ですね
 
     診察中...
     診察中...
     診察中...
 
-    診断内容は「#{@selected_examination.disease}」です
-    医療費は「#{@selected_examination.cost}円」です
+    診断内容は「#{disease}」です
+    医療費は「#{cost}円」です
     ----------------
     TEXT
   end
 
-  def self_pay_comment
+  def self_pay_comment(age: ,self_pay: ,health_insurance_pay:)
     puts <<~TEXT
-    #{@age}歳の場合、医療費の自己負担は#{self_pay_ratio}割です
-    あなたが負担する金額は：#{@self_pay}円です
-    残りの#{@health_insurance_pay}円はあなたが加入している医療保険が支払います
+    #{age}歳の場合、医療費の自己負担は#{self_pay_ratio}割です
+    あなたが負担する金額は：#{self_pay}円です
+    残りの#{health_insurance_pay}円はあなたが加入している医療保険が支払います
     TEXT
   end
 
