@@ -39,18 +39,17 @@ module Comments
     TEXT
   end
 
-  def rare_disease_self_pay_comment(cost:)
+  def rare_disease_self_pay_comment(cost: ,self_pay: ,health_insurance_pay:)
     puts <<~TEXT
     あなたの年収では、自己負担額は#{rare_disease_self_pay_limit}円になります
-    あなたの年齢では、医療費の#{10 - self_pay_ratio}割（#{@health_insurance_pay}円）を
+    あなたの年齢では、医療費の#{10 - self_pay_ratio}割（#{health_insurance_pay}円）を
     あなたが加入している医療保険が負担します
-    残りの#{@self_pay - rare_disease_self_pay_limit}円（#{cost}円 - #{rare_disease_self_pay_limit}円 - #{@health_insurance_pay}円)を国と都道府県が半分ずつ#{(@self_pay - rare_disease_self_pay_limit)/2}円負担します
+    残りの#{self_pay - rare_disease_self_pay_limit}円（#{cost}円 - #{rare_disease_self_pay_limit}円 - #{health_insurance_pay}円)を国と都道府県が半分ずつ#{(self_pay - rare_disease_self_pay_limit)/2}円を負担します
     TEXT
   end
 
   def high_cost_medical_expense_benefit_comment
     puts <<~TEXT
-    ----------------
     医療費が高額の場合、年齢や年収に応じ
     自己負担額に上限が定められます（高額療養費制度）
     TEXT
@@ -64,25 +63,29 @@ module Comments
   end
 
   def elderly_self_pay_comment(cost:)
+    balance = cost - cost * elderly_self_pay_ratio/10
+
     puts <<~TEXT
     ----------------
     自己負担額は#{cost * elderly_self_pay_ratio/10}円です
-    残りの#{cost - cost * elderly_self_pay_ratio/10}円の負担内訳です
-    5割（#{(cost - cost * elderly_self_pay_ratio/10) * 0.5}円）が公費（国、都道府県、市町村）
-    4割（#{(cost - cost * elderly_self_pay_ratio/10) * 0.4.floor}円）が若年者（75歳未満）の保険料
-    1割（#{(cost - cost * elderly_self_pay_ratio/10) * 0.1.floor}円）が高齢者（75歳以上）の保険料
+    残りの#{balance}円の負担内訳です
+    5割（#{(balance * 0.5).floor}円）が公費（国、都道府県、市町村）
+    4割（#{(balance * 0.4).floor}円）が若年者（75歳未満）の保険料
+    1割（#{(balance * 0.1).floor}円）が高齢者（75歳以上）の保険料
     TEXT
   end
 
   def elderly_self_pay_limit_comment(cost: ,income:)
+    balance2 = cost - self_pay_limit
+
     puts <<~TEXT
     ----------------
     自己負担額は本来#{cost * elderly_self_pay_ratio/10}円ですが、
     上限が定められており、年収#{income}万円の場合#{self_pay_limit}円で済みます
-    残りの#{cost - self_pay_limit}円の負担内訳です
-    5割（#{cost - self_pay_limit * 0.5}円）が公費（国、都道府県、市町村）
-    4割（#{cost - self_pay_limit * 0.4.floor}円）が若年者（75歳未満）の保険料
-    1割（#{cost - self_pay_limit * 0.1.floor}円）が高齢者（75歳以上）の保険料
+    残りの#{balance2}円の負担内訳です
+    5割（#{(balance2 * 0.5).floor}円）が公費（国、都道府県、市町村）
+    4割（#{(balance2 * 0.4).floor}円）が若年者（75歳未満）の保険料
+    1割（#{(balance2 * 0.1).floor}円）が高齢者（75歳以上）の保険料
     TEXT
   end
 

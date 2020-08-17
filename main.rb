@@ -4,18 +4,12 @@ require './comments'
 require './diagnostician'
 require 'byebug'
 
-include Comments
-
-# shindan = Shindan.new
-# shindan.disp_symptom(examinations)
-# shindan.select_symptom(examinations)
-# shindan.select_age
-# shindan.announcement
-# shindan.calculation
-# shindan.selected_disease
+question_comment
 
 diagnostician = Diagnostician.new
 diagnostician.select_symptom(examinations)
 diagnostician.select_age
 # diagnostician.select_income
 diagnostician.diagnose
+
+last_comment

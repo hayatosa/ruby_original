@@ -6,7 +6,6 @@ require 'byebug'
 include Comments
 
 class Diagnostician
-  question_comment
 
   def disp_symptom(examinations)
     examinations.each.with_index(1) do |examination,i|
@@ -15,7 +14,6 @@ class Diagnostician
   end
 
   def select_symptom(examinations)
-
     disp_symptom(examinations)
 
     print "番号を入力して下さい："
@@ -27,7 +25,7 @@ class Diagnostician
       puts "不正な入力値です。1~5から選んでください"
       select_symptom(examinations)
     end
-end
+  end
 
   def select_age
     print "あなたの年齢を教えてください："
@@ -70,31 +68,44 @@ end
         1
       end
     end
+    # 収入による支払い上限額
+    def self_pay_limit
+      case @income
+      when 0..369
+        60_000
+      when 370..769
+        90_000
+      when 770..1159
+        170_000
+      else
+        260_000
+      end
+    end
+
     # 自己負担額
-    @self_pay = @selected_examination[:cost] * self_pay_ratio/10
+    self_pay = @selected_examination[:cost] * self_pay_ratio/10
     # 医療保険負担額
-    @health_insurance_pay = @selected_examination[:cost] - @self_pay
+    health_insurance_pay = @selected_examination[:cost] - self_pay
 
-    if @selected_examination[3]
-      diagnose_rare_disease
+    if @selected_examination == examinations[3]
+      diagnose_rare_disease(self_pay, health_insurance_pay)
 
-    elsif @age <= 74 && @self_pay <= 60_000
+    elsif @age <= 74 && self_pay <= 60_000
       self_pay_comment(
         age: @age,
-        self_pay: @self_pay,
-        health_insurance_pay: @health_insurance_pay,
+        self_pay: self_pay,
+        health_insurance_pay: health_insurance_pay,
         )
 
-    elsif @self_pay > 60_000
-      high_cost_medical_expense_benefit
+    elsif self_pay > 60_000
+      high_cost_medical_expense_benefit(self_pay)
 
     elsif 75 <= @age
-    # && examination_number != 3
       medical_system_for_elderly
     end
   end
 
-  def diagnose_rare_disease
+  def diagnose_rare_disease(self_pay, health_insurance_pay)
     # 難病助成制度の自己負担額上限
     def rare_disease_self_pay_limit
       case @income
@@ -111,34 +122,28 @@ end
 
     rare_disease_comment(disease: @selected_examination[:disease])
     select_income
-    rare_disease_self_pay_comment(cost: @selected_examination[:cost])
-
+    rare_disease_self_pay_comment(
+      cost: @selected_examination[:cost],
+      self_pay: self_pay,
+      health_insurance_pay: health_insurance_pay,
+      )
   end
 
-  def high_cost_medical_expense_benefit
-
-    def self_pay_limit
-      case @income
-      when 0..369
-        60_000
-      when 370..769
-        90_000
-      when 770..1159
-        170_000
-      else
-        260_000
-      end
-    end
-
+  # 高額療養費制度
+  def high_cost_medical_expense_benefit(self_pay)
     high_cost_medical_expense_benefit_comment
     select_income
 
-    if @self_pay - self_pay_limit < 0
-      puts "今回の自己負担額は上限内でしたので、あなたが負担する金額は変わらず#{@self_pay}円です"
+    if self_pay - self_pay_limit < 0
+      puts <<~TEXT
+      今回の自己負担額は、本来あなたが負担する割合（#{self_pay_ratio}割）の範囲内でした
+      従って負担額は#{self_pay}円です
+      残りの#{@selected_examination[:cost] - self_pay}円はあなたが加入している医療保険が支払います
+      TEXT
     else
       puts <<~TEXT
       年収#{@income}万円の場合、自己負担上限額は#{self_pay_limit}円です
-      残りの#{@self_pay - self_pay_limit}円も、あなたが加入している医療保険が支払います
+      残りの#{@selected_examination[:cost] - self_pay_limit}円をあなたが加入している医療保険が支払います
       TEXT
     end
   end
@@ -154,31 +159,12 @@ end
       end
     end
 
-    def self_pay_limit
-      case @income
-      when 0..369
-        60_000
-      when 370..769
-        90_000
-      when 770..1159
-        170_000
-      else
-        260_000
-      end
-    end
-
     medical_system_for_elderly_comment
     select_income
-    puts "年収#{income}万円の場合、自己負担割合は#{elderly_self_pay_ratio}割です"
+    puts "年収#{@income}万円の場合、自己負担割合は#{elderly_self_pay_ratio}割です"
 
     # 高齢者自己負担額
     elderly_self_pay = @selected_examination[:cost] * elderly_self_pay_ratio/10
-
-    # 自己負担額上限を超えた場合
-    @upper_limit_balance = @selected_examination.cost - self_pay_limit
-    @upper_limit_public_cost = @upper_limit_balance / 2
-    @upper_limit_young_cost = @upper_limit_balance * 0.4
-    @upper_limit_old_cost = @upper_limit_balance * 0.1
 
     if elderly_self_pay - self_pay_limit < 0 || 60_000 >= elderly_self_pay
       elderly_self_pay_comment(
@@ -190,12 +176,6 @@ end
         income: @income,
       )
     end
-
   end
 
 end
-
-# Diagnostician.select_symptom
-# Diagnostician.select_age
-# Diagnostician.select_income
-# Diagnostician.diagnose
