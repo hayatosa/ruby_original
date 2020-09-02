@@ -7,24 +7,40 @@ include Comments
 
 class Diagnostician
 
-  def disp_symptom(examinations)
+  MAXIMUM_AMOUNT = 60_000
+
+  def examinations
+    examination_lists =
+      [
+        {symptom:"熱っぽい", disease: "風邪", cost: 5_000},
+        {symptom:"手が痛い", disease: "骨折", cost: 200_000},
+        {symptom:"胃がムカムカ", disease: "胃潰瘍", cost: 600_000},
+        {symptom:"下痢・血便", disease: "潰瘍性大腸炎", cost: 1_000_000},
+        {symptom:"頭痛・吐き気・あざ・倦怠感・歯ぐきの腫れ", disease: "急性白血病", cost: 5_000_000},
+      ]
+  end
+
+  FIRST_SYMPTOM_NUM = 1
+  TOTAL_SYMPTOM_NUM = examinations.size
+
+  def disp_symptom
     examinations.each.with_index(1) do |examination,i|
       puts "#{i} #{examination[:symptom]}"
     end
   end
 
-  def select_symptom(examinations)
-    disp_symptom(examinations)
-
-    print "番号を入力して下さい："
-    selected_number = gets.chomp.to_i
-    @selected_examination = examinations[selected_number - 1]
-
-    # メソッド名による繰り返し処理
-    if selected_number < 1 || 5 < selected_number
-      puts "不正な入力値です。1~5から選んでください"
-      select_symptom(examinations)
-    end
+  def select_examination
+    disp_symptom
+    loop{
+      print "番号を入力して下さい："
+      selected_number = gets.chomp.to_i
+      @selected_examination = examinations[selected_number - 1]
+      if examinations[selected_number - 1].nil?
+        puts "不正な入力値です。#{FIRST_SYMPTOM_NUM}~#{TOTAL_SYMPTOM_NUM}から選んでください"
+        next
+      end
+      break
+    }
   end
 
   def select_age
@@ -48,78 +64,106 @@ class Diagnostician
     puts "#{@income}万円ですね"
   end
 
-  def diagnose
+  def self_pay_ratio
+    age1 = [[0..5],2]
+    age2 = [[6.69],3]
+    age3 = [[70..74],2]
+    age4 = [[75..120],1]
+
+    case @age
+    when age1[0]
+      age1.last
+    when age2[0]
+      age2.last
+    when age3[0]
+      age3.last
+    when age4[0]
+      age4.last
+    end
+  end
+  # 収入による支払い上限額
+  def self_pay_limit
+    income1 = [[0..369],60_000]
+    income2 = [[370..769],90_000]
+    income3 = [[770..1159],170_000]
+    income4 = 260_000
+
+    case @income
+    when income1[0]
+      income1.last
+    when income2[0]
+      income2.last
+    when income3[0]
+      income3.last
+    else
+      income4
+    end
+  end
+
+  def calculate
+    # 自己負担額
+    self_pay = @selected_examination[:cost] * self_pay_ratio/10
+    # 医療保険負担額
+    health_insurance_pay = @selected_examination[:cost] - self_pay
+  end
+
+  def diagnose(examination ,age)
     diagnose_comment(
       age: @age,
       symptom: @selected_examination[:symptom],
       disease: @selected_examination[:disease],
       cost: @selected_examination[:cost],
       )
-    # 年齢による自己負担割合
-    def self_pay_ratio
-      case @age
-      when 0..5
-        2
-      when 6..69
-        3
-      when 70..74
-        2
-      when 75..120
-        1
-      end
-    end
-    # 収入による支払い上限額
-    def self_pay_limit
-      case @income
-      when 0..369
-        60_000
-      when 370..769
-        90_000
-      when 770..1159
-        170_000
-      else
-        260_000
+
+    def rare_disease
+      if @selected_examination == examinations[3]
+        diagnose_rare_disease(self_pay, health_insurance_pay)
       end
     end
 
-    # 自己負担額
-    self_pay = @selected_examination[:cost] * self_pay_ratio/10
-    # 医療保険負担額
-    health_insurance_pay = @selected_examination[:cost] - self_pay
+    def normal
+      if @age <= 74 && self_pay <= MAXIMUM_AMOUNT
+        self_pay_comment(
+          age: @age,
+          self_pay: self_pay,
+          health_insurance_pay: health_insurance_pay,
+          )
+      end
+    end
 
-    if @selected_examination == examinations[3]
-      diagnose_rare_disease(self_pay, health_insurance_pay)
+    def high_cost
+      if self_pay > MAXIMUM_AMOUNT
+        high_cost_medical_expense_benefit(self_pay)
+      end
+    end
 
-    elsif @age <= 74 && self_pay <= 60_000
-      self_pay_comment(
-        age: @age,
-        self_pay: self_pay,
-        health_insurance_pay: health_insurance_pay,
-        )
+    def elderly
+      if 75 <= @age
+        medical_system_for_elderly
+      end
+    end
+  end
 
-    elsif self_pay > 60_000
-      high_cost_medical_expense_benefit(self_pay)
+  # 難病助成制度の自己負担額上限
+  def rare_disease_self_pay_limit
+    rare_disease_income1 = [[0..159],5_000]
+    rare_disease_income2 = [[160..369],10_000]
+    rare_disease_income3 = [[370..809],20_000]
+    rare_disease_income4 = 30_000
 
-    elsif 75 <= @age
-      medical_system_for_elderly
+    case @income
+    when rare_disease_income1[0]
+      rare_disease_income1.last
+    when rare_disease_income2[0]
+      rare_disease_income2.last
+    when rare_disease_income3[0]
+      rare_disease_income3.last
+    else
+      rare_disease_income4
     end
   end
 
   def diagnose_rare_disease(self_pay, health_insurance_pay)
-    # 難病助成制度の自己負担額上限
-    def rare_disease_self_pay_limit
-      case @income
-      when 0..159
-        5_000
-      when 160..369
-        10_000
-      when 370..809
-        20_000
-      else
-        30_000
-      end
-    end
-
     rare_disease_comment(disease: @selected_examination[:disease])
     select_income
     rare_disease_self_pay_comment(
@@ -148,17 +192,20 @@ class Diagnostician
     end
   end
 
-  def medical_system_for_elderly
-    # 75歳以上の自己負担割合
-    def elderly_self_pay_ratio
-      case @income
-      when 0..369
-        1
-      else
-        3
-      end
-    end
+  # 75歳以上の自己負担割合
+  def elderly_self_pay_ratio
+    elderly_income1 = [[0..369],1]
+    elderly_income2 = 3
 
+    case @income
+    when elderly_income1[0]
+      elderly_income1.last
+    else
+      elderly_income2
+    end
+  end
+
+  def medical_system_for_elderly
     medical_system_for_elderly_comment
     select_income
     puts "年収#{@income}万円の場合、自己負担割合は#{elderly_self_pay_ratio}割です"
@@ -166,7 +213,7 @@ class Diagnostician
     # 高齢者自己負担額
     elderly_self_pay = @selected_examination[:cost] * elderly_self_pay_ratio/10
 
-    if elderly_self_pay - self_pay_limit < 0 || 60_000 >= elderly_self_pay
+    if elderly_self_pay - self_pay_limit < 0 || MAXIMUM_AMOUNT >= elderly_self_pay
       elderly_self_pay_comment(
         cost: @selected_examination[:cost],
       )

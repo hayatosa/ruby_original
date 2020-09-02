@@ -7,9 +7,9 @@ require 'byebug'
 question_comment
 
 diagnostician = Diagnostician.new
-diagnostician.select_symptom(examinations)
-diagnostician.select_age
-# diagnostician.select_income
-diagnostician.diagnose
+examination = diagnostician.select_examination
+age = diagnostician.select_age
+diagnostician.calculate
+diagnostician.diagnose(examination ,age)
 
 last_comment
