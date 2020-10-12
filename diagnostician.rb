@@ -1,5 +1,4 @@
 require 'active_support/core_ext/numeric/conversions'
-require './examinations'
 require './comments'
 require 'byebug'
 
@@ -7,7 +6,16 @@ include Comments
 
 class Diagnostician
 
-  MAXIMUM_AMOUNT = 60_000
+  MIN_SELF_PAY = 0
+  MAX_SELF_PAY = 60_000
+  MIN_AGE = 0
+  MAX_AGE = 120
+  MIN_INCOME = 0
+  ELDERLY_AGE = 75
+
+  FIRST_SYMPTOM_NUM = 1
+
+
 
   def examinations
     examination_lists =
@@ -19,9 +27,6 @@ class Diagnostician
         {symptom:"頭痛・吐き気・あざ・倦怠感・歯ぐきの腫れ", disease: "急性白血病", cost: 5_000_000},
       ]
   end
-
-  FIRST_SYMPTOM_NUM = 1
-  TOTAL_SYMPTOM_NUM = examinations.size
 
   def disp_symptom
     examinations.each.with_index(1) do |examination,i|
@@ -36,7 +41,7 @@ class Diagnostician
       selected_number = gets.chomp.to_i
       @selected_examination = examinations[selected_number - 1]
       if examinations[selected_number - 1].nil?
-        puts "不正な入力値です。#{FIRST_SYMPTOM_NUM}~#{TOTAL_SYMPTOM_NUM}から選んでください"
+        puts "不正な入力値です。#{FIRST_SYMPTOM_NUM}~5から選んでください"
         next
       end
       break
@@ -47,7 +52,7 @@ class Diagnostician
     print "あなたの年齢を教えてください："
     @age = gets.chomp.to_i
 
-    if @age < 0 || 120 < @age
+    if @age < MIN_AGE || MAX_AGE < @age
       puts "不正な値です。0~120を入力してください"
       select_age
     end
@@ -57,57 +62,15 @@ class Diagnostician
     print "あなたの年収(万)を教えてください："
     @income = gets.chomp.to_i
 
-    if @income < 0
+    if @income < MIN_INCOME
       puts "不正な値です。0以上を入力してください"
       select_income
     end
     puts "#{@income}万円ですね"
   end
 
-  def self_pay_ratio
-    age1 = [[0..5],2]
-    age2 = [[6.69],3]
-    age3 = [[70..74],2]
-    age4 = [[75..120],1]
+  def diagnose
 
-    case @age
-    when age1[0]
-      age1.last
-    when age2[0]
-      age2.last
-    when age3[0]
-      age3.last
-    when age4[0]
-      age4.last
-    end
-  end
-  # 収入による支払い上限額
-  def self_pay_limit
-    income1 = [[0..369],60_000]
-    income2 = [[370..769],90_000]
-    income3 = [[770..1159],170_000]
-    income4 = 260_000
-
-    case @income
-    when income1[0]
-      income1.last
-    when income2[0]
-      income2.last
-    when income3[0]
-      income3.last
-    else
-      income4
-    end
-  end
-
-  def calculate
-    # 自己負担額
-    self_pay = @selected_examination[:cost] * self_pay_ratio/10
-    # 医療保険負担額
-    health_insurance_pay = @selected_examination[:cost] - self_pay
-  end
-
-  def diagnose(examination ,age)
     diagnose_comment(
       age: @age,
       symptom: @selected_examination[:symptom],
@@ -115,113 +78,148 @@ class Diagnostician
       cost: @selected_examination[:cost],
       )
 
-    def rare_disease
-      if @selected_examination == examinations[3]
-        diagnose_rare_disease(self_pay, health_insurance_pay)
-      end
+    #年齢による自己負担割合
+    ages = [
+      [[0..],2],
+      [[6..],3],
+      [[70..],2],
+      [[75..],1],
+      ]
+
+    #収入による自己負担上限額
+    incomes = [
+      [[0..],60000],
+      [[370..],90000],
+      [[770..],170000],
+      [[1160..],260000],
+      ]
+
+    #難病制度下での収入による自己負担上限額
+    rare_disease_incomes = [
+      [[0..],5000],
+      [[160..],10000],
+      [[370..],20000],
+      [[810..],30000],
+      ]
+
+    #75歳以上
+    elderly_incomes = [
+      [[0..369],1],
+      [[370..],3],
+      ]
+
+    self_pay = @selected_examination[:cost] * self_pay_ratio(@age,ages)/10
+    health_insurance_pay = @selected_examination[:cost] - self_pay
+
+    if rare_disease(self_pay, health_insurance_pay, ages, rare_disease_incomes)
+    elsif
+      elderly(elderly_incomes, incomes)
+    elsif
+      high_cost(self_pay, ages, incomes)
+    elsif
+      normal(self_pay, health_insurance_pay, ages)
     end
 
-    def normal
-      if @age <= 74 && self_pay <= MAXIMUM_AMOUNT
-        self_pay_comment(
-          age: @age,
+  end
+
+private
+
+  def self_pay_ratio(variable, array)
+    case variable
+    when *array[3].first
+      array[3].last
+    when *array[2].first
+      array[2].last
+    when *array[1].first
+      array[1].last
+    when *array[0].first
+      array[0].last
+    end
+  end
+
+  def rare_disease(self_pay, health_insurance_pay, ages, rare_disease_incomes)
+    if @selected_examination == examinations[3]
+      rare_disease_comment(disease: @selected_examination[:disease])
+      select_income
+      rare_disease_self_pay_comment(
+        cost: @selected_examination[:cost],
+        self_pay: self_pay,
+        health_insurance_pay: health_insurance_pay,
+        self_pay_ratio: self_pay_ratio(@age,ages),
+        rare_disease_self_pay_limit: self_pay_ratio(@income,rare_disease_incomes),
+        )
+    end
+  end
+
+  def normal(self_pay, health_insurance_pay, ages)
+    if @age < ELDERLY_AGE && self_pay <= MAX_SELF_PAY
+      self_pay_comment(
+        age: @age,
+        self_pay: self_pay,
+        health_insurance_pay: health_insurance_pay,
+        self_pay_ratio: self_pay_ratio(@age,ages),
+        )
+    end
+  end
+
+  def high_cost(self_pay, ages, incomes)
+    if self_pay > MAX_SELF_PAY && @selected_examination != examinations[3]
+      high_cost_comment
+      select_income
+
+      if self_pay - self_pay_ratio(@income,incomes) < MIN_SELF_PAY
+        high_cost_self_pay_comment(
+          cost: @selected_examination[:cost],
           self_pay: self_pay,
-          health_insurance_pay: health_insurance_pay,
+          self_pay_ratio: self_pay_ratio(@age,ages),
+          )
+      else
+        high_cost_self_pay_limit_comment(
+          income: @income,
+          cost: @selected_examination[:cost],
+          self_pay_ratio: self_pay_ratio(@income,incomes),
           )
       end
     end
-
-    def high_cost
-      if self_pay > MAXIMUM_AMOUNT
-        high_cost_medical_expense_benefit(self_pay)
-      end
-    end
-
-    def elderly
-      if 75 <= @age
-        medical_system_for_elderly
-      end
-    end
   end
 
-  # 難病助成制度の自己負担額上限
-  def rare_disease_self_pay_limit
-    rare_disease_income1 = [[0..159],5_000]
-    rare_disease_income2 = [[160..369],10_000]
-    rare_disease_income3 = [[370..809],20_000]
-    rare_disease_income4 = 30_000
 
-    case @income
-    when rare_disease_income1[0]
-      rare_disease_income1.last
-    when rare_disease_income2[0]
-      rare_disease_income2.last
-    when rare_disease_income3[0]
-      rare_disease_income3.last
-    else
-      rare_disease_income4
+  # 75歳以上
+  def elderly_self_pay_ratio(variable, array)
+    case variable
+    when *array[1].first
+      array[1].last
+    when *array[0].first
+      array[0].last
     end
   end
 
-  def diagnose_rare_disease(self_pay, health_insurance_pay)
-    rare_disease_comment(disease: @selected_examination[:disease])
-    select_income
-    rare_disease_self_pay_comment(
-      cost: @selected_examination[:cost],
-      self_pay: self_pay,
-      health_insurance_pay: health_insurance_pay,
-      )
-  end
+  def elderly(elderly_incomes, incomes)
+    if ELDERLY_AGE <= @age
 
-  # 高額療養費制度
-  def high_cost_medical_expense_benefit(self_pay)
-    high_cost_medical_expense_benefit_comment
-    select_income
-
-    if self_pay - self_pay_limit < 0
-      puts <<~TEXT
-      今回の自己負担額は、本来あなたが負担する割合（#{self_pay_ratio}割）の範囲内でした
-      従って負担額は#{self_pay}円です
-      残りの#{@selected_examination[:cost] - self_pay}円はあなたが加入している医療保険が支払います
-      TEXT
-    else
-      puts <<~TEXT
-      年収#{@income}万円の場合、自己負担上限額は#{self_pay_limit}円です
-      残りの#{@selected_examination[:cost] - self_pay_limit}円をあなたが加入している医療保険が支払います
-      TEXT
-    end
-  end
-
-  # 75歳以上の自己負担割合
-  def elderly_self_pay_ratio
-    elderly_income1 = [[0..369],1]
-    elderly_income2 = 3
-
-    case @income
-    when elderly_income1[0]
-      elderly_income1.last
-    else
-      elderly_income2
-    end
-  end
-
-  def medical_system_for_elderly
-    medical_system_for_elderly_comment
-    select_income
-    puts "年収#{@income}万円の場合、自己負担割合は#{elderly_self_pay_ratio}割です"
-
-    # 高齢者自己負担額
-    elderly_self_pay = @selected_examination[:cost] * elderly_self_pay_ratio/10
-
-    if elderly_self_pay - self_pay_limit < 0 || MAXIMUM_AMOUNT >= elderly_self_pay
-      elderly_self_pay_comment(
-        cost: @selected_examination[:cost],
-      )
-    else
-      elderly_self_pay_limit_comment(
-        cost: @selected_examination[:cost],
+      elderly_comment
+      select_income
+      elderly_self_pay_ratio_comment(
         income: @income,
-      )
+        elderly_self_pay_ratio: elderly_self_pay_ratio(@income,elderly_incomes),
+        )
+
+      elderly_self_pay = @selected_examination[:cost] * elderly_self_pay_ratio(@income,elderly_incomes)/10
+
+      if elderly_self_pay - self_pay_ratio(@income,incomes) < MIN_SELF_PAY || elderly_self_pay <= MAX_SELF_PAY
+        elderly_self_pay_comment(
+          cost: @selected_examination[:cost],
+          elderly_self_pay_ratio: elderly_self_pay_ratio(@income,elderly_incomes),
+          )
+      else
+        elderly_self_pay_limit_comment(
+          cost: @selected_examination[:cost],
+          income: @income,
+          elderly_self_pay_ratio: elderly_self_pay_ratio(@income,elderly_incomes),
+          self_pay_limit: self_pay_ratio(@income,incomes),
+        )
+      end
+
     end
   end
 
