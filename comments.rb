@@ -63,10 +63,10 @@ module Comments
     TEXT
   end
 
-  def high_cost_self_pay_limit_comment(income: ,cost: ,self_pay_ratio:)
+  def high_cost_self_pay_limit_comment(income: ,cost: ,self_pay_limit:)
     puts <<~TEXT
-    年収#{income}万円の場合、自己負担上限額は#{self_pay_ratio}円です
-    残りの#{cost - self_pay_ratio}円をあなたが加入している医療保険が支払います
+    年収#{income}万円の場合、自己負担上限額は#{self_pay_limit}円です
+    残りの#{cost - self_pay_limit}円をあなたが加入している医療保険が支払います
     TEXT
   end
 
